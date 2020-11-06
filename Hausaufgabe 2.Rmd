@@ -12,8 +12,80 @@ library(tidyverse)
 Zuerst stellen wir 2 Variablen - die abhängige und unabhängige Variablen fest:
 
 - Anzahl Bücher pro Publisher
-```{r}
 
+```{r}
+(Anzahl_Bücher1 <- BX_Books%>%
+  group_by(Publisher) %>%
+  summarise(Anzahl_Bücher = n())%>%
+  arrange(desc(Anzahl_Bücher))%>%
+  unique())
+```
+- Anzahl Ratings, die die Bücher eines Publishers erhalten
+
+```{r}
+ratings <- BX_Book_Ratings%>%
+  left_join(BX_Books)
+  
 ```
 
+```{r}
+(Anzahl_Ratings1 <- ratings %>%
+  group_by(Publisher)%>%
+  mutate (Anzahl_Ratings = n()) %>%
+  filter(!is.na(Publisher))%>%
+  select(Publisher, Anzahl_Ratings)%>%
+  arrange(desc(Anzahl_Ratings))%>%
+  unique())
+```
+- Erstelen wir dann eine Data Frame, wobei die beiden Variablen zu sehen sind:
+
+```{r}
+(BookvsRatings <- Anzahl_Bücher1%>%
+  left_join(Anzahl_Ratings1)%>%
+  select(Anzahl_Bücher,Anzahl_Ratings))
+```
+- Hyphothese: je mehr Bücher ein Vertrag/Publisher hat, desto mehr Ratings bekomemen der. Analysieren wir die Regression Beziehung zwischen die 2 Variablen.
+
+```{r}
+fit <- lm(BookvsRatings$Anzahl_Ratings~BookvsRatings$Anzahl_Bücher)
+```
+
+```{r}
+plot(BookvsRatings)
+abline(fit)
+```
+```{r}
+summary(fit)
+```
+
+#Anwort
+-Nach dem Plotdiagramm und die Statistic Analyse kann man behaupten, dass die Hypothese nicht stimmt, denn:
+   + Median zu hoch
+   + Standard Abweichung (anhand R-squared) ist eher nicht anspruchsvoll genug
+- Daher meiner meine Meinung nach gibt es keine lineare Beziehung zwischen Anzahl Bücher pro Publisher und Anzahl Ratings, die die Bücher eines Publishers erhalten.
+   
+#2. Haben ältere Bücher mehr Ratings, weil sie mehr Zeit haben, um Ratings zu sammeln? 
+
+- Wir erstellen zuerst Dataframe von die Ratings von allen Büchern.
+
+```{r}
+(Anzahl_Ratings2 <- ratings%>%
+  group_by(ISBN)%>%
+  mutate(Anzahl_Ratings_nach_ISBN = n())%>%
+  select(ISBN,Anzahl_Ratings_nach_ISBN))
+```
+-Eine Dataframe, wobei die 2 Variablen dargestellt werden
+
+```{r}
+(Tabelle <- BX_Books%>%
+  left_join(Anzahl_Ratings2)%>%
+  select(`Year-Of-Publication`,Anzahl_Ratings_nach_ISBN)%>%
+  arrange(desc(`Year-Of-Publication`)))
+```
+
+Anhand von der Tabelle können wir behaupten, dass die Hypothese falsch ist, denn die jüngere Bücher doch mehr Ratings haben als die ältere. Es wird sogar noch durch die Plotdiagramm verdeutlicht:
+
+```{r}
+plot(Tablelle)
+```
 
