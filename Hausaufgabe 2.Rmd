@@ -86,6 +86,6 @@ summary(fit)
 Anhand von der Tabelle können wir behaupten, dass die Hypothese falsch ist, denn die jüngere Bücher doch mehr Ratings haben als die ältere. Es wird sogar noch durch die Plotdiagramm verdeutlicht:
 
 ```{r}
-plot(Tablelle)
+plot(Tabelle)
 ```
 
