@@ -2,5 +2,18 @@
 title: "R Notebook"
 output: html_notebook
 ---
+```{r}
+install.packages("tidyverse")
+library(tidyverse)
+```
+
+#1. Gibt es eine lineare Beziehung zwischen Anzahl Bücher pro Publisher und Anzahl Ratings, die die Bücher eines Publishers erhalten? (hier müssen Sie wieder etwas Data Wrangling betreiben)
+
+Zuerst stellen wir 2 Variablen - die abhängige und unabhängige Variablen fest:
+
+- Anzahl Bücher pro Publisher
+```{r}
+
+```
 
 
