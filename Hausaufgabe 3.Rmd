@@ -13,6 +13,7 @@ all <- read_csv("all.csv")
 txn <- as(i, "transactions")
 basket_rules <- apriori(txn, parameter = list(sup = 0.0015, conf = 0.001,minlen = 2, target = "rules" ))
 ```
+
 ```{r}
 myRules_Direct <- as(basket_rules, "data.frame")
 basket_rules_hi <- head(basket_rules, by ="lift",100)
@@ -51,11 +52,14 @@ Man kann eine neue Data Frame erstellen, in der die Ratings für die Bücher der
   filter(number_of_ratings>1000)%>%
   unique()) 
 ```
+
+
 ```{r}
 i2 <- split(Autor_Ratings$`Book-Author`, Autor_Ratings$`User-ID`)
 txn2 <- as(i2, "transactions")
 basket_rules2 <- apriori(txn2, parameter = list(sup = 0.0015, conf = 0.001,minlen = 2, target = "rules" ))
 ```
+
 ```{r}
 myRules_Direct2 <- as(basket_rules, "data.frame")
 basket_rules_hi2 <- head(basket_rules2, by ="lift",100)
