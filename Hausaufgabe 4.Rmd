@@ -1,0 +1,182 @@
+---
+title: "R Notebook"
+output: html_notebook
+
+---
+```{r}
+library(tidyverse)
+library(e1071)
+library(caret)
+library(pROC)
+```
+
+#I. Ich mache mein Notebook mit folgende Features (Klasse, Siblings/Geschwester und Embarked/Haltestelle)
+
+```{r}
+titanic <- read_delim("titanic.csv", ";", 
+    escape_double = FALSE, trim_ws = TRUE)
+```
+#herausfinden, wie viele überlebt und wie viele gestorben sind. 
+
+```{r}
+titanic %>%
+  group_by(survived) %>%
+  summarize(n = n())
+```
+```{r}
+(titanic.selected <- titanic %>%
+  select(survived,pclass,sibsp,embarked))
+```
+```{r}
+(titanic.selected <- na.omit(titanic.selected))
+```
+#Feature Engineering: Replace Character in embarked Column into Number
+
+```{r}
+titanic.selected%>%
+  group_by(embarked)%>%
+  summarise(n = n())
+```
+#Install DataCombine for Replacing Character into Number
+
+```{r}
+install.packages("DataCombine")
+library(DataCombine)
+```
+
+
+#Replace 
+```{r}
+Replaces <- data.frame(from = c("C", "Q","S"), to = c("0", "1", "2"))
+```
+
+```{r}
+titanic.selected <- as.data.frame(titanic.selected)
+
+titanic.new <- FindReplace(data = titanic.selected, Var = "embarked", replaceData = Replaces,
+                     from = "from", to = "to", exact = FALSE)
+```
+
+```{r}
+titanic.new.vector <- FindReplace(data = titanic.selected, Var = "embarked", replaceData = Replaces,
+                     from = "from", to = "to", vector = TRUE)
+```
+
+#Finale Data Frame
+
+```{r}
+titanic.new <-titanic.new%>%
+  mutate(embarked = as.numeric(embarked))
+```
+
+#Partition
+
+```{r}
+set.seed(107)
+inTrain <- createDataPartition(
+  y = titanic.new$survived,
+  p = .8,
+  list = FALSE)
+training <- titanic.new[ inTrain,]
+testing  <- titanic.new[-inTrain,]
+```
+
+#1. Support Vector Machines Algo:
+
+```{r}
+model <- svm(survived ~ ., data = training)
+summary(model)
+pred <- predict(model, testing[,-1], probability = FALSE)
+```
+
+```{r}
+(test.results <- cbind(pred, testing))
+```
+
+
+```{r}
+library(pROC)
+pROC_obj <- roc(test.results$survived, test.results$pred,
+            smoothed = TRUE,
+            ci=TRUE, ci.alpha=0.9, stratified=FALSE,
+            plot=TRUE, auc.polygon=TRUE, max.auc.polygon=TRUE, grid=TRUE,
+            print.auc=TRUE, show.thres=TRUE)
+```
+
+#2. Naive Bayes ALgo
+
+```{r}
+my_training <- training %>%
+  mutate(survived = as.factor(survived))%>%
+  mutate(sibsp = as.factor(sibsp))%>%
+  mutate(pclass = as.factor(pclass)) %>%
+  mutate(embarked = as.factor(embarked))
+model <- naiveBayes(survived ~ ., data = my_training)
+model
+```
+
+```{r}
+my_testing <- testing %>%
+  mutate(sibsp = as.factor(sibsp))%>%
+  mutate(pclass = as.factor(pclass)) %>%
+  mutate(embarked = as.factor(embarked))
+pred <- predict(model, my_testing)
+table(pred, my_testing$survived)
+```
+
+
+```{r}
+(test.results <- cbind(pred, my_testing))
+```
+
+```{r}
+test.results <- test.results %>%
+  mutate(pred = as.numeric(pred))
+pROC_obj <- roc(as.numeric(as.character(test.results$survived)), test.results$pred,
+            smoothed = TRUE,
+            ci=TRUE, ci.alpha=0.9, stratified=FALSE,
+            plot=TRUE, auc.polygon=TRUE, max.auc.polygon=TRUE, grid=TRUE,
+            print.auc=TRUE, show.thres=TRUE)
+
+```
+
+#3. Decision Tree Algo
+
+```{r}
+library(rpart)
+library(rpart.plot)
+tree<- rpart(survived~., data = training, method = 'class')
+rpart.plot(tree)
+```
+
+
+```{r}
+dt_results <- predict(tree, testing[,-1], type = 'prob')
+head(model.results.dt <- cbind(testing,dt_results),500)
+```
+```{r}
+test.results2 <- test.results %>%
+  mutate(pred = ifelse(pred>=0.5,1,0))
+table(test.results2$pred, testing$survived)
+```
+
+
+```{r}
+pROC_obj <- roc(model.results.dt$survived,model.results.dt$`1`,
+            smoothed = TRUE,
+            # arguments for ci
+            ci=TRUE, ci.alpha=0.9, stratified=FALSE,
+            # arguments for plot
+            plot=TRUE, auc.polygon=TRUE, max.auc.polygon=TRUE, grid=TRUE,
+            print.auc=TRUE, show.thres=TRUE)
+```
+II. Was sind die Unterschiede in der Perfomance der Algorithmen?
+- Die Curves Lines der 3 Algo sind unterschiedlich, aber alle 3 betragen die Werte ungefähr 0,6 bis 0,7, was nicht so ideal wäre. AUC sind > 0,5 (SVM: 0,681; Naive Bayer: 0,626 und De)
+- Die AUC sind unterschiedlich, obwohl wir die Testing und Training Gruppe bei allen Algo gleich sind. SVM hat die besten Perfomance, trotzdem müssen wir vor dem Overfitting vorsichtig sein.
+
+III. Finden Sie Erklärungen dafür.
+- SVM arbeitet mit Distanzen, während Naive Bayer mit Kategorie von Datensätzen der Data Frame. Das führt zu großem Unterschied in der Performance.
+- Decision Tree ist nicht "top" bei ihrer Performance, denn die Transparenz ist dabei mehr wichtiger.
+
+Frage:
+- Ich frage mich, ob die Performance von der Decision Tree ALgo bei mir falsch ist, denn ich sehe die Aspekt "embarked" nicht dabei. Es liegt nicht bei den Code an, dann woran liegt dieser Fehler?
