@@ -16,6 +16,7 @@ library(pROC)
 titanic <- read_delim("titanic.csv", ";", 
     escape_double = FALSE, trim_ws = TRUE)
 ```
+
 #herausfinden, wie viele überlebt und wie viele gestorben sind. 
 
 ```{r}
@@ -30,6 +31,7 @@ titanic %>%
 ```{r}
 (titanic.selected <- na.omit(titanic.selected))
 ```
+
 #Feature Engineering: Replace Character in embarked Column into Number
 
 ```{r}
@@ -37,6 +39,7 @@ titanic.selected%>%
   group_by(embarked)%>%
   summarise(n = n())
 ```
+
 #Install DataCombine for Replacing Character into Number
 
 ```{r}
@@ -45,7 +48,7 @@ library(DataCombine)
 ```
 
 
-#Replace 
+#Replace to numeric
 ```{r}
 Replaces <- data.frame(from = c("C", "Q","S"), to = c("0", "1", "2"))
 ```
@@ -154,12 +157,13 @@ rpart.plot(tree)
 dt_results <- predict(tree, testing[,-1], type = 'prob')
 head(model.results.dt <- cbind(testing,dt_results),500)
 ```
+
+
 ```{r}
 test.results2 <- test.results %>%
   mutate(pred = ifelse(pred>=0.5,1,0))
 table(test.results2$pred, testing$survived)
 ```
-
 
 ```{r}
 pROC_obj <- roc(model.results.dt$survived,model.results.dt$`1`,
@@ -170,6 +174,7 @@ pROC_obj <- roc(model.results.dt$survived,model.results.dt$`1`,
             plot=TRUE, auc.polygon=TRUE, max.auc.polygon=TRUE, grid=TRUE,
             print.auc=TRUE, show.thres=TRUE)
 ```
+
 II. Was sind die Unterschiede in der Perfomance der Algorithmen?
 - Die Curves Lines der 3 Algo sind unterschiedlich, aber alle 3 betragen die Werte ungefähr 0,6 bis 0,7, was nicht so ideal wäre. AUC sind > 0,5 (SVM: 0,681; Naive Bayer: 0,626 und De)
 - Die AUC sind unterschiedlich, obwohl wir die Testing und Training Gruppe bei allen Algo gleich sind. SVM hat die besten Perfomance, trotzdem müssen wir vor dem Overfitting vorsichtig sein.
@@ -177,6 +182,3 @@ II. Was sind die Unterschiede in der Perfomance der Algorithmen?
 III. Finden Sie Erklärungen dafür.
 - SVM arbeitet mit Distanzen, während Naive Bayer mit Kategorie von Datensätzen der Data Frame. Das führt zu großem Unterschied in der Performance.
 - Decision Tree ist nicht "top" bei ihrer Performance, denn die Transparenz ist dabei mehr wichtiger.
-
-Frage:
-- Ich frage mich, ob die Performance von der Decision Tree ALgo bei mir falsch ist, denn ich sehe die Aspekt "embarked" nicht dabei. Es liegt nicht bei den Code an, dann woran liegt dieser Fehler?
