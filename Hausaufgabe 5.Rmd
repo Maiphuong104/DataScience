@@ -1,0 +1,116 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Versuchen Sie die Leser aus dem Buch-Datenset zu clustern: Welche Bücher gehören in welches Cluster?
+
+
+```{r}
+library(tidyverse)
+library(cluster)
+library(caret)
+```
+
+```{r}
+all <- read_csv("all.csv")
+```
+
+#Wir bilden erstmal die Datenframe. Ich nehme die Anzahl der Bücher >149, damit es nachher weniger Dataansätze in meiner Analyse gäbe. 
+
+```{r}
+(users_books <- all %>%
+  group_by(`Book-Title`) %>%
+  mutate(no_of_books = n()) %>%
+  filter(no_of_books > 149) %>%
+  filter(`Book-Rating` > 9) %>%
+  select(`User-ID`, `Book-Title`))
+```
+
+#Nun nutzen wir den Befehl spread, um die Matrix für Varianz Berechnung zu bilden
+
+```{r}
+users_books <- users_books %>%
+  unique()
+(books_wide <- users_books %>%
+  mutate(i = 1) %>%
+  spread(`Book-Title`,i,fill=0))
+```
+# Nun finden wir die passendsten k Value:
+
+```{r}
+wss <- (nrow(books_wide)-1)*sum(apply(books_wide,2,var))
+  for (i in 2:10) wss[i] <- sum(kmeans(books_wide,
+                                       centers=i)$withinss)
+```
+
+```{r}
+plot(1:10, wss, type="b", xlab="Number of Clusters",
+     ylab="Within groups sum of squares")
+```
+
+#Das Knick/Break Point ist am Punkt 2, daher nehmen wir k=2
+
+#Berechnen wir Distanz
+```{r}
+book_wide.dist <- dist(books_wide, method="euclidean")
+```
+
+
+
+
+
+# Hierarchie Clustering
+
+```{r}
+book_wide.hc <- hclust(book_wide.dist, method = "ward.D2")
+plot(book_wide.hc)
+groups <- cutree(book_wide.hc, k=2) 
+rect.hclust(book_wide.hc, k=2, border="red")
+```
+
+#Sehen wir jetzt die Result, wem gehört welche Gruppe/ welches Cluster
+```{r}
+books_wide %>%
+  mutate(cluster = groups) %>%
+  select(`User-ID`,cluster) %>% 
+  arrange(cluster)
+```
+
+
+
+# K Means Clustering
+
+```{r}
+k.means.fit <- kmeans(books_wide, 2) 
+```
+
+
+```{r}
+k.means.fit$size
+```
+
+```{r}
+clusplot(books_wide, k.means.fit$cluster, color=TRUE, shade=TRUE,
+labels=0, lines=0, main="K-means cluster plot")
+```
+
+#Nun clustern wir die Bücher anhand das Clustering von User-ID:
+```{r}
+set.seed(10000)
+```
+
+```{r}
+result <- as.data.frame(cbind(books_wide$`User-ID`, k.means.fit$cluster))
+```
+
+```{r}
+result %>%
+  left_join(users_books, by= c("V1" = "User-ID")) %>%
+  group_by(V2, `Book-Title`) %>%
+  mutate(count = n()) %>%
+  summarize(n = n()) %>%
+  filter(n>30)%>%
+  arrange(V2 = desc(n))
+```
+
