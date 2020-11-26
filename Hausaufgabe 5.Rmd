@@ -102,6 +102,7 @@ set.seed(10000)
 
 ```{r}
 result <- as.data.frame(cbind(books_wide$`User-ID`, k.means.fit$cluster))
+
 ```
 
 ```{r}
@@ -110,7 +111,6 @@ result %>%
   group_by(V2, `Book-Title`) %>%
   mutate(count = n()) %>%
   summarize(n = n()) %>%
-  filter(n>30)%>%
-  arrange(V2 = desc(n))
+  filter(n>50)
 ```
 
