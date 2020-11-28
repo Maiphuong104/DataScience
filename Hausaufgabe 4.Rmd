@@ -26,7 +26,8 @@ titanic %>%
 ```
 ```{r}
 (titanic.selected <- titanic %>%
-  select(survived,pclass,sibsp,embarked))
+  select(survived,pclass,sibsp,embarked)) %>%
+  mutate(survived = as.factor(survived))
 ```
 ```{r}
 (titanic.selected <- na.omit(titanic.selected))
@@ -43,7 +44,6 @@ titanic.selected%>%
 #Install DataCombine for Replacing Character into Number
 
 ```{r}
-install.packages("DataCombine")
 library(DataCombine)
 ```
 
@@ -55,7 +55,10 @@ Replaces <- data.frame(from = c("C", "Q","S"), to = c("0", "1", "2"))
 
 ```{r}
 titanic.selected <- as.data.frame(titanic.selected)
+```
 
+
+```{r}
 titanic.new <- FindReplace(data = titanic.selected, Var = "embarked", replaceData = Replaces,
                      from = "from", to = "to", exact = FALSE)
 ```
@@ -68,8 +71,13 @@ titanic.new.vector <- FindReplace(data = titanic.selected, Var = "embarked", rep
 #Finale Data Frame
 
 ```{r}
-titanic.new <-titanic.new%>%
-  mutate(embarked = as.numeric(embarked))
+#titanic.new <-titanic.new%>%
+  #mutate(embarked = as.numeric(embarked))
+```
+
+```{r}
+(titanic.new <- titanic.new%>%
+  mutate(survived = as.factor(survived)))
 ```
 
 #Partition
@@ -87,14 +95,27 @@ testing  <- titanic.new[-inTrain,]
 #1. Support Vector Machines Algo:
 
 ```{r}
-model <- svm(survived ~ ., data = training)
+model <- svm(formula = survived ~ ., data = training, probability = TRUE)
 summary(model)
-pred <- predict(model, testing[,-1], probability = FALSE)
+pred <- predict(model, testing[,-1], probability = TRUE)
 ```
 
 ```{r}
 (test.results <- cbind(pred, testing))
 ```
+```{r}
+head(attr(pred, "probabilities"))
+```
+
+
+```{r}
+confusionMatrix(pred,testing$survived)
+```
+
+```{r}
+saveRDS(model, "./titanic.svm.rds")
+```
+
 
 
 ```{r}

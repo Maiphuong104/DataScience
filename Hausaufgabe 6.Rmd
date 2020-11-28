@@ -1,0 +1,206 @@
+---
+title: "R Notebook"
+output:
+  html_document:
+    df_print: paged
+  
+---
+
+# Libraries und Daten
+```{r}
+library(tidyverse)
+library(e1071)
+library(caret)
+library(pROC)
+```
+
+```{r}
+titanic <- read_delim("titanic.csv", ";", 
+    escape_double = FALSE, trim_ws = TRUE)
+```
+
+# Class Imbalance Check
+
+```{r}
+titanic %>%
+  group_by(survived) %>%
+  summarize(n = n())
+```
+# 1. Versuch mit SVM mit 2 Variablen
+
+```{r}
+(titanic.df <- titanic %>%
+  select(survived,pclass,age))
+```
+
+```{r}
+titanic.df <- titanic.df %>%
+  mutate(age = as.numeric(str_replace(age,",",".")))
+```
+
+```{r}
+titanic.df <- na.omit(titanic.df)
+titanic.df <- titanic.df %>%
+  mutate(survived = as.factor(survived))
+```
+
+```{r}
+train_control <- trainControl(method="cv", number=10, , savePredictions = TRUE)
+```
+
+
+```{r}
+set.seed(127)
+inTrain <- createDataPartition(
+  y = titanic.df$survived,
+  p = .8,
+  list = FALSE)
+training <- titanic.df[ inTrain,]
+testing  <- titanic.df[-inTrain,]
+```
+
+```{r}
+model.svm <- train(survived~., data=training, trControl=train_control, method="svmLinear")
+summary(model.svm)
+pred <- predict(model.svm, testing[,-1], probability = FALSE)
+```
+
+```{r}
+model.svm$pred
+```
+```{r}
+(titanic.df <- titanic %>%
+  select(survived,pclass,sex,age) %>%
+   mutate(survived = as.factor(survived)))
+```
+
+```{r}
+titanic.df <- titanic.df %>%
+  mutate(age = as.numeric(str_replace(age,",",".")))
+```
+
+```{r}
+titanic.df <- na.omit(titanic.df)
+```
+
+```{r}
+titanic.df <- titanic.df %>%
+  mutate(sex = ifelse(sex == "female", 1, 0))
+```
+
+```{r}
+set.seed(393)
+inTrain <- createDataPartition(
+  y = titanic.df$survived,
+  p = .8,
+  list = FALSE)
+training <- titanic.df[ inTrain,]
+testing  <- titanic.df[-inTrain,]
+```
+
+```{r}
+model.svm <- svm(formula = survived ~ ., data = training, probability=TRUE)
+summary(model.svm)
+pred <- predict(model.svm, testing[,-1], probability = TRUE)
+```
+
+```{r}
+(test.results <- cbind(pred, testing))
+```
+```{r}
+head(attr(pred, "probabilities"))
+```
+
+```{r}
+confusionMatrix(pred,testing$survived)
+```
+
+
+```{r}
+library(pROC)
+pROC_obj <- roc(as.numeric(test.results$survived), as.numeric(test.results$pred),
+            smoothed = TRUE,
+            ci=TRUE, ci.alpha=0.9, stratified=FALSE,
+            plot=TRUE, auc.polygon=TRUE, max.auc.polygon=TRUE, grid=TRUE,
+            print.auc=TRUE, show.thres=TRUE)
+```
+## Das Modell speichern
+
+```{r}
+saveRDS(model.svm, "./titanic.svm.rds")
+```
+
+
+```{r}
+library(tidyverse)
+library(e1071)
+library(shiny)
+```
+
+
+```{r}
+mymodel.svm <- readRDS('titanic.svm.rds')
+```
+
+```{r}
+pclass <- 6
+sex <-0
+age <- 6
+data <- data.frame(pclass,sex,age)
+result <- predict(model.svm, data, probability=TRUE)
+result[[1]]
+```
+
+
+```{r}
+(my_result <- data.frame(attr(result,"probabilities")))
+```
+
+# Shiny-Beispiele
+
+```{r}
+runExample("01_hello")      # a histogram
+```
+```{r}
+runExample("02_text")       # tables and data frames
+```
+
+```{r}
+runExample("03_reactivity") # a reactive expression
+```
+
+```{r}
+runExample("04_mpg")        # global variables
+```
+
+```{r}
+runExample("05_sliders")    # slider bars
+```
+
+```{r}
+runExample("06_tabsets")    # tabbed panels
+```
+
+```{r}
+runExample("07_widgets")    # help text and submit buttons
+```
+
+```{r}
+runExample("08_html")       # Shiny app built from HTML
+```
+
+```{r}
+runExample("09_upload")     # file upload wizard
+```
+
+```{r}
+runExample("10_download")   # file download wizard
+```
+
+```{r}
+runExample("11_timer")      # an automated timer
+```
+
+#Hausaufgabe 6:
+#Erstellen wir die app.R Datei
+
